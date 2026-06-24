@@ -43,6 +43,13 @@ def infer_fit(text: str) -> list[str]:
     return fits or ["small automation deliverable"]
 
 
+def extract_contacts(text: str) -> dict:
+    clean = clean_html(text)
+    emails = sorted(set(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", clean)))
+    urls = sorted(set(re.findall(r"https?://[^\s)\]<>]+", clean)))
+    return {"emails": emails, "urls": urls}
+
+
 def draft_pitch(job_text: str, hn_url: str) -> str:
     clean = clean_html(job_text)
     company_line = clean.splitlines()[0][:120] if clean else "your HN hiring post"
@@ -78,6 +85,7 @@ async def build_packets(query: str, remote: bool, limit: int) -> list[dict]:
             "hn_url": job.hn_url,
             "author": job.author,
             "fit": infer_fit(clean_html(job.text)),
+            "contacts": extract_contacts(job.text),
             "excerpt": clean_html(job.text)[:700],
             "pitch": draft_pitch(job.text, job.hn_url),
         })
@@ -87,7 +95,13 @@ async def build_packets(query: str, remote: bool, limit: int) -> list[dict]:
 def render_markdown(packets: list[dict]) -> str:
     out = ["# HN Outreach Packets", ""]
     for i, p in enumerate(packets, 1):
-        out += [f"## {i}. {p['hn_url']}", "", f"**Fit:** {', '.join(p['fit'])}", "", "**Excerpt:**", "", p["excerpt"], "", "**Pitch:**", "", "```", p["pitch"].strip(), "```", ""]
+        contacts = p.get("contacts", {})
+        contact_line = ""
+        if contacts.get("emails"):
+            contact_line += "**Emails:** " + ", ".join(contacts["emails"]) + "\n\n"
+        if contacts.get("urls"):
+            contact_line += "**URLs:** " + ", ".join(contacts["urls"][:3]) + "\n\n"
+        out += [f"## {i}. {p['hn_url']}", "", f"**Fit:** {', '.join(p['fit'])}", "", contact_line.rstrip(), "", "**Excerpt:**", "", p["excerpt"], "", "**Pitch:**", "", "```", p["pitch"].strip(), "```", ""]
     return "\n".join(out)
 
 
