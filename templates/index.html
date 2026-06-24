@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HN Hiring Search</title>
+  <style>
+    :root { --bg:#0b1020; --panel:#141b2d; --ink:#e8eefc; --muted:#91a0b8; --accent:#ff6600; --line:#263147; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; background: radial-gradient(circle at top, #18213a, var(--bg)); color:var(--ink); }
+    main { width:min(1100px, calc(100% - 32px)); margin:0 auto; padding:48px 0; }
+    h1 { font-size:clamp(2.4rem, 7vw, 5rem); line-height:.95; margin:0 0 12px; }
+    p { color:var(--muted); font-size:1.1rem; }
+    .search { display:grid; grid-template-columns: 2fr 1fr auto auto auto; gap:10px; background:rgba(20,27,45,.85); padding:18px; border:1px solid var(--line); border-radius:18px; margin:28px 0; }
+    input, button { font:inherit; border-radius:12px; border:1px solid var(--line); padding:12px 14px; background:#0c1221; color:var(--ink); }
+    button { background:var(--accent); color:white; border:0; font-weight:800; cursor:pointer; }
+    label { display:flex; gap:6px; align-items:center; color:var(--muted); }
+    .job { background:rgba(20,27,45,.92); border:1px solid var(--line); border-radius:18px; padding:18px; margin:14px 0; }
+    .job a { color:var(--accent); }
+    .meta { color:var(--muted); font-size:.9rem; margin-bottom:8px; }
+    .text { white-space:pre-wrap; line-height:1.55; }
+    mark { background:#3b2600; color:#ffd18a; padding:0 3px; border-radius:4px; }
+    @media (max-width:800px) { .search { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>HN Hiring Search</h1>
+    <p>Search recent Hacker News “Who is Hiring?” threads by keyword, location, remote, and onsite.</p>
+
+    <form class="search" id="searchForm">
+      <input id="q" placeholder="Keyword: python, rails, ml, design…" />
+      <input id="location" placeholder="Location: Berlin, NYC, Europe…" />
+      <label><input type="checkbox" id="remote" /> Remote</label>
+      <label><input type="checkbox" id="onsite" /> Onsite</label>
+      <button>Search</button>
+    </form>
+
+    <p id="status">Try “python remote” or “rust berlin”.</p>
+    <section id="results"></section>
+  </main>
+
+  <script>
+    const form = document.getElementById('searchForm');
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+
+    function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultsEl.innerHTML = '';
+      statusEl.textContent = 'Searching HN…';
+      const params = new URLSearchParams({
+        q: document.getElementById('q').value,
+        location: document.getElementById('location').value,
+        remote: document.getElementById('remote').checked,
+        onsite: document.getElementById('onsite').checked,
+        threads: 3,
+      });
+      const res = await fetch('/api/search?' + params.toString());
+      const data = await res.json();
+      statusEl.textContent = `${data.count || 0} matches across ${data.thread_titles?.length || 0} recent threads.`;
+      for (const job of data.results || []) {
+        const div = document.createElement('div');
+        div.className = 'job';
+        div.innerHTML = `<div class="meta">by ${escapeHtml(job.author || 'unknown')} · <a href="${job.hn_url}" target="_blank">HN comment</a></div><div class="text">${escapeHtml(job.text)}</div>`;
+        resultsEl.appendChild(div);
+      }
+    });
+  </script>
+</body>
+</html>

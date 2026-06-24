@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hn-hiring-search"
+version = "0.1.0"
+description = "Search Hacker News 'Who is Hiring?' threads by keyword, location, remote, and seniority"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "piaigmt", email = "piaigmt@proton.me"}]
+keywords = ["hackernews", "jobs", "search", "hiring", "fastapi"]
+dependencies = [
+    "fastapi>=0.104",
+    "uvicorn>=0.24",
+    "httpx>=0.25",
+    "jinja2>=3.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/piaigmt/hn-hiring-search"
+Repository = "https://github.com/piaigmt/hn-hiring-search"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
